@@ -75,41 +75,40 @@ app.get("/svr/products", (req, res) => {
     }
   });
 });
-
 app.get("/svr/purchases", (req, res) => {
-  let shop = req.query.shop;
-  let product = req.query.product;
-  let sort = req.query.sort;
-  let sql = "SELECT * FROM purchases WHERE 1=1";
-  let values = [];
-  if (shop) {
-    sql += " AND shopid = $1";
-    values.push(shop);
-  }
-  if (product) {
-    sql += " AND productid = $2";
-    values.push(product);
-  }
-  if (sort) {
-    const validSortFields = ["QtyAsc", "QtyDesc", "ValueAsc", "ValueDesc"];
-    const orderBy = validSortFields.find((sortKey) => sortKey === sort);
-    if (orderBy) {
-      const sortField = orderBy === "QtyAsc" || orderBy === "QtyDesc" ? "quantity" : "price";
-      const sortOrder = orderBy === "QtyAsc" || orderBy === "ValueAsc" ? "ASC" : "DESC";
-      sql += ` ORDER BY ${sortField} ${sortOrder}`;
-    }
-  }
+  const { shop, product, sort } = req.query;
   fs.readFile(purchasesFilePath, "utf8", (err, data) => {
     if (err) {
       console.error("Error while reading data:", err);
       res.status(500).send("An error occurred while reading data.");
-    } else {
-      const purchases = JSON.parse(data);
-      const filteredPurchases = values.length > 0 ? purchases.filter(p => values.includes(p.shopid) || values.includes(p.productid)) : purchases;
-      res.send(filteredPurchases);
+      return;
     }
+
+    const purchases = JSON.parse(data);
+    let filteredPurchases = purchases;
+
+    if (shop) {
+      filteredPurchases = filteredPurchases.filter(p => p.shopid === shop);
+    }
+
+    if (product) {
+      filteredPurchases = filteredPurchases.filter(p => p.productid === product);
+    }
+
+    if (sort) {
+      const validSortFields = ["QtyAsc", "QtyDesc", "ValueAsc", "ValueDesc"];
+      const orderBy = validSortFields.find(sortKey => sortKey === sort);
+      if (orderBy) {
+        const sortField = orderBy === "QtyAsc" || orderBy === "QtyDesc" ? "quantity" : "price";
+        const sortOrder = orderBy === "QtyAsc" || orderBy === "ValueAsc" ? 1 : -1;
+        filteredPurchases.sort((a, b) => (a[sortField] - b[sortField]) * sortOrder);
+      }
+    }
+
+    res.send(filteredPurchases);
   });
 });
+
 
 app.get("/svr/purchases/shops/:id", (req, res) => {
   const id = +req.params.id;
