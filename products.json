@@ -1,0 +1,50 @@
+[
+  {
+    "productid": 1,
+    "productname": "Pepsi Can",
+    "category": "Soft Drinks",
+    "description": "300ml"
+  },
+  {
+    "productid": 2,
+    "productname": "Pepsi PET",
+    "category": "Soft Drinks",
+    "description": "500ml"
+  },
+  {
+    "productid": 3,
+    "productname": "Diet Coke",
+    "category": "Soft Drinks",
+    "description": "300ml Can"
+  },
+  {
+    "productid": 4,
+    "productname": "Mazaa",
+    "category": "Soft Drinks",
+    "description": "500ml bottle"
+  },
+  {
+    "productid": 5,
+    "productname": "Dairy Milk",
+    "category": "Chocolate",
+    "description": "25 g"
+  },
+  {
+    "productid": 6,
+    "productname": "Fruit & Nut",
+    "category": "Chocolate",
+    "description": "60 g"
+  },
+  {
+    "productid": 7,
+    "productname": "Silk - Crackles",
+    "category": "Chocolate",
+    "description": "100g"
+  },
+  {
+    "productid": 8,
+    "productname": "Perk",
+    "category": "Chocolate",
+    "description": "40 g"
+  }
+]
