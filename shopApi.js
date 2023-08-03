@@ -20,38 +20,53 @@ app.listen(port, () => console.log(`Node app listening on port ${port}`));
 const shopsFilePath = "./shops.json";
 const productsFilePath = "./products.json";
 const purchasesFilePath = "./purchases.json";
-const {shops, products, purchases} = require("./shopData");
+const { shops, products, purchases } = require("./shopData");
 app.get("/svr/resetData/shops", (req, res) => {
-  fs.writeFile(shopsFilePath, JSON.stringify(shops, null, 2), { flag: 'w' }, (err) => {
-    if (err) {
-      console.error("Error while writing data:", err);
-      res.status(500).send("An error occurred while writing data.");
-    } else {
-      res.send(`Successfully reset data. Affected rows: ${shops.length}`);
+  fs.writeFile(
+    shopsFilePath,
+    JSON.stringify(shops, null, 2),
+    { flag: "w" },
+    (err) => {
+      if (err) {
+        console.error("Error while writing data:", err);
+        res.status(500).send("An error occurred while writing data.");
+      } else {
+        res.send(`Successfully reset data. Affected rows: ${shops.length}`);
+      }
     }
-  });
+  );
 });
 
 app.get("/svr/resetData/products", (req, res) => {
-  fs.writeFile(productsFilePath, JSON.stringify(products, null, 2), { flag: 'w' }, (err) => {
-    if (err) {
-      console.error("Error while writing data:", err);
-      res.status(500).send("An error occurred while writing data.");
-    } else {
-      res.send(`Successfully reset data. Affected rows: ${products.length}`);
+  fs.writeFile(
+    productsFilePath,
+    JSON.stringify(products, null, 2),
+    { flag: "w" },
+    (err) => {
+      if (err) {
+        console.error("Error while writing data:", err);
+        res.status(500).send("An error occurred while writing data.");
+      } else {
+        res.send(`Successfully reset data. Affected rows: ${products.length}`);
+      }
     }
-  });
+  );
 });
 
 app.get("/svr/resetData/purchases", (req, res) => {
-  fs.writeFile(purchasesFilePath, JSON.stringify(purchases, null, 2), { flag: 'w' }, (err) => {
-    if (err) {
-      console.error("Error while writing data:", err);
-      res.status(500).send("An error occurred while writing data.");
-    } else {
-      res.send(`Successfully reset data. Affected rows: ${purchases.length}`);
+  fs.writeFile(
+    purchasesFilePath,
+    JSON.stringify(purchases, null, 2),
+    { flag: "w" },
+    (err) => {
+      if (err) {
+        console.error("Error while writing data:", err);
+        res.status(500).send("An error occurred while writing data.");
+      } else {
+        res.send(`Successfully reset data. Affected rows: ${purchases.length}`);
+      }
     }
-  });
+  );
 });
 
 app.get("/svr/shops", (req, res) => {
@@ -83,32 +98,37 @@ app.get("/svr/purchases", (req, res) => {
       res.status(500).send("An error occurred while reading data.");
       return;
     }
-
     const purchases = JSON.parse(data);
     let filteredPurchases = purchases;
-
     if (shop) {
-      filteredPurchases = filteredPurchases.filter(p => p.shopid === shop);
+      filteredPurchases = filteredPurchases.filter((p) => p.shopid === shop);
     }
-
     if (product) {
-      filteredPurchases = filteredPurchases.filter(p => p.productid === product);
+      filteredPurchases = filteredPurchases.filter(
+        (p) => p.productid === product
+      );
     }
-
     if (sort) {
       const validSortFields = ["QtyAsc", "QtyDesc", "ValueAsc", "ValueDesc"];
-      const orderBy = validSortFields.find(sortKey => sortKey === sort);
-      if (orderBy) {
-        const sortField = orderBy === "QtyAsc" || orderBy === "QtyDesc" ? "quantity" : "price";
-        const sortOrder = orderBy === "QtyAsc" || orderBy === "ValueAsc" ? 1 : -1;
-        filteredPurchases.sort((a, b) => (a[sortField] - b[sortField]) * sortOrder);
+      const orderBy = validSortFields.find((sortKey) => sortKey === sort);
+      if (orderBy === "QtyAsc") {
+        filteredPurchases.sort((a, b) => a.quantity - b.quantity);
+      } else if (orderBy === "QtyDesc") {
+        filteredPurchases.sort((a, b) => b.quantity - a.quantity);
+      } else if (orderBy === "ValueAsc") {
+        filteredPurchases.sort(
+          (a, b) => a.price * a.quantity - b.price * b.quantity
+        );
+      } else if (orderBy === "ValueDesc") {
+        filteredPurchases.sort(
+          (a, b) => b.price * b.quantity - a.price * a.quantity
+        );
       }
     }
 
     res.send(filteredPurchases);
   });
 });
-
 
 app.get("/svr/purchases/shops/:id", (req, res) => {
   const id = +req.params.id;
@@ -120,7 +140,7 @@ app.get("/svr/purchases/shops/:id", (req, res) => {
       res.status(500).send("An error occurred while reading data.");
     } else {
       const purchases = JSON.parse(data);
-      const filteredPurchases = purchases.filter(p => p.shopid === id);
+      const filteredPurchases = purchases.filter((p) => p.shopid === id);
       res.send(filteredPurchases);
     }
   });
@@ -136,7 +156,7 @@ app.get("/svr/purchases/products/:id", (req, res) => {
       res.status(500).send("An error occurred while reading data.");
     } else {
       const purchases = JSON.parse(data);
-      const filteredPurchases = purchases.filter(p => p.productid === id);
+      const filteredPurchases = purchases.filter((p) => p.productid === id);
       res.send(filteredPurchases);
     }
   });
@@ -153,14 +173,19 @@ app.post("/svr/shops", (req, res, next) => {
     } else {
       const existingShops = JSON.parse(data);
       existingShops.push(newShop);
-      fs.writeFile(shopsFilePath, JSON.stringify(existingShops, null, 2), { flag: 'w' }, (err) => {
-        if (err) {
-          console.error("Error while inserting data:", err);
-          res.status(500).send("An error occurred while inserting data.");
-        } else {
-          res.send(`Successfully inserted new shop.`);
+      fs.writeFile(
+        shopsFilePath,
+        JSON.stringify(existingShops, null, 2),
+        { flag: "w" },
+        (err) => {
+          if (err) {
+            console.error("Error while inserting data:", err);
+            res.status(500).send("An error occurred while inserting data.");
+          } else {
+            res.send(`Successfully inserted new shop.`);
+          }
         }
-      });
+      );
     }
   });
 });
@@ -175,19 +200,24 @@ app.put("/svr/products/:id", (req, res) => {
         res.status(500).send("An error occurred while reading data.");
       } else {
         const products = JSON.parse(data);
-        const productIndex = products.findIndex(p => p.productid === id);
+        const productIndex = products.findIndex((p) => p.productid === id);
         if (productIndex !== -1) {
           products[productIndex].productname = productname;
           products[productIndex].category = category;
           products[productIndex].description = description;
-          fs.writeFile(productsFilePath, JSON.stringify(products, null, 2), { flag: 'w' }, (err) => {
-            if (err) {
-              console.error("Error while updating data:", err);
-              res.status(500).send("An error occurred while updating data.");
-            } else {
-              res.send(`Successfully updated product with id ${id}.`);
+          fs.writeFile(
+            productsFilePath,
+            JSON.stringify(products, null, 2),
+            { flag: "w" },
+            (err) => {
+              if (err) {
+                console.error("Error while updating data:", err);
+                res.status(500).send("An error occurred while updating data.");
+              } else {
+                res.send(`Successfully updated product with id ${id}.`);
+              }
             }
-          });
+          );
         } else {
           res.status(404).send(`Product with id ${id} not found.`);
         }
@@ -196,4 +226,43 @@ app.put("/svr/products/:id", (req, res) => {
   } else {
     res.status(400).send("Invalid product id provided.");
   }
+});
+app.get("/totalPurchase/shop/:id", (req, res) => {
+  const shopId = req.params.id;
+  console.log(shopId);
+  fs.readFile(purchasesFilePath, "utf8", (err, data) => {
+    if (err) {
+      console.error("Error while reading data:", err);
+      res.status(500).send("An error occurred while reading data.");
+      return;
+    }
+    const purchases = JSON.parse(data);
+    const totalPurchaseByShop = purchases.reduce((acc, purchase) => {
+      if (+purchase.shopid === +shopId) {
+        const productId = purchase.productid;
+        acc[productId] = (acc[productId] || 0) + purchase.quantity;
+      }
+      return acc;
+    }, {});
+    res.send(totalPurchaseByShop);
+  });
+});
+app.get("/totalPurchase/product/:id", (req, res) => {
+  const productId = req.params.id;
+  fs.readFile(purchasesFilePath, "utf8", (err, data) => {
+    if (err) {
+      console.error("Error while reading data:", err);
+      res.status(500).send("An error occurred while reading data.");
+      return;
+    }
+    const purchases = JSON.parse(data);
+    const totalPurchaseByProduct = purchases.reduce((acc, purchase) => {
+      if (+purchase.productid === +productId) {
+        const shopId = purchase.shopid;
+        acc[shopId] = (acc[shopId] || 0) + purchase.quantity;
+      }
+      return acc;
+    }, {});
+    res.send(totalPurchaseByProduct);
+  });
 });
