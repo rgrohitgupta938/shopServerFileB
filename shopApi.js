@@ -25,7 +25,6 @@ app.get("/svr/resetData/shops", (req, res) => {
   fs.writeFile(
     shopsFilePath,
     JSON.stringify(shops, null, 2),
-    { flag: "w" },
     (err) => {
       if (err) {
         console.error("Error while writing data:", err);
@@ -41,7 +40,6 @@ app.get("/svr/resetData/products", (req, res) => {
   fs.writeFile(
     productsFilePath,
     JSON.stringify(products, null, 2),
-    { flag: "w" },
     (err) => {
       if (err) {
         console.error("Error while writing data:", err);
@@ -57,7 +55,6 @@ app.get("/svr/resetData/purchases", (req, res) => {
   fs.writeFile(
     purchasesFilePath,
     JSON.stringify(purchases, null, 2),
-    { flag: "w" },
     (err) => {
       if (err) {
         console.error("Error while writing data:", err);
