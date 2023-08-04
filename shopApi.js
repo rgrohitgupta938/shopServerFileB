@@ -78,8 +78,8 @@ app.get("/svr/purchases", (req, res) => {
   let { shop, sort } = req.query;
   let product = req.query.product || null;
   console.log(product);
-  const removePr= (product) => product.replace("pr", "");
-  const removeSt= (shop) => shop.replace("st", "");
+  const removePr = (product) => product.replace("pr", "");
+  const removeSt = (shop) => shop.replace("st", "");
   fs.readFile(purchasesFilePath, "utf8", (err, data) => {
     if (err) {
       console.error("Error while reading data:", err);
@@ -89,17 +89,28 @@ app.get("/svr/purchases", (req, res) => {
     const purchases = JSON.parse(data);
     let filteredPurchases = purchases;
     if (shop) {
-        shop = removeSt(shop);
-        console.log(shop);
+      shop = removeSt(shop);
+      console.log(shop);
       let st = shops.find((sh) => sh.shopid === +shop);
-      filteredPurchases = filteredPurchases.filter(
-        (p) => p.shopid === st.shopid
-      );
+      console.log(st);
+      if (st) {
+        filteredPurchases = filteredPurchases.filter(
+          (p) => p.shopid === st.shopid
+        );
+      } else {
+        filteredPurchases = [];
+      }
     }
     if (product) {
-        const productIds = product.split(",").map(removePr);
-        filteredPurchases = filteredPurchases.filter((p) => productIds.includes(p.productid.toString()));
-      }
+      const productIds = product.split(",").map(removePr);
+      filteredPurchases = filteredPurchases.filter((p) =>
+        productIds.includes(p.productid.toString())
+      )
+        ? filteredPurchases.filter((p) =>
+            productIds.includes(p.productid.toString())
+          )
+        : [];
+    }
     if (sort) {
       const validSortFields = ["QtyAsc", "QtyDesc", "ValueAsc", "ValueDesc"];
       const orderBy = validSortFields.find((sortKey) => sortKey === sort);
