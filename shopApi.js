@@ -3,7 +3,6 @@ const fs = require("fs");
 const app = express();
 app.use(express.json());
 app.use(function (req, res, next) {
-  // CORS headers
   res.header("Access-Control-Allow-Origin", "*");
   res.header(
     "Access-Control-Allow-Headers",
@@ -22,48 +21,36 @@ const productsFilePath = "./products.json";
 const purchasesFilePath = "./purchases.json";
 const { shops, products, purchases } = require("./shopData");
 app.get("/svr/resetData/shops", (req, res) => {
-  fs.writeFile(
-    shopsFilePath,
-    JSON.stringify(shops, null, 2),
-    (err) => {
-      if (err) {
-        console.error("Error while writing data:", err);
-        res.status(500).send("An error occurred while writing data.");
-      } else {
-        res.send(`Successfully reset data. Affected rows: ${shops.length}`);
-      }
+  fs.writeFile(shopsFilePath, JSON.stringify(shops, null, 2), (err) => {
+    if (err) {
+      console.error("Error while writing data:", err);
+      res.status(500).send("An error occurred while writing data.");
+    } else {
+      res.send(`Successfully reset data. Affected rows: ${shops.length}`);
     }
-  );
+  });
 });
 
 app.get("/svr/resetData/products", (req, res) => {
-  fs.writeFile(
-    productsFilePath,
-    JSON.stringify(products, null, 2),
-    (err) => {
-      if (err) {
-        console.error("Error while writing data:", err);
-        res.status(500).send("An error occurred while writing data.");
-      } else {
-        res.send(`Successfully reset data. Affected rows: ${products.length}`);
-      }
+  fs.writeFile(productsFilePath, JSON.stringify(products, null, 2), (err) => {
+    if (err) {
+      console.error("Error while writing data:", err);
+      res.status(500).send("An error occurred while writing data.");
+    } else {
+      res.send(`Successfully reset data. Affected rows: ${products.length}`);
     }
-  );
+  });
 });
 
 app.get("/svr/resetData/purchases", (req, res) => {
-  fs.writeFile(
-    purchasesFilePath,
-    JSON.stringify(purchases, null, 2),
-    (err) => {
-      if (err) {
-        console.error("Error while writing data:", err);
-        res.status(500).send("An error occurred while writing data.");
-      } else {
-        res.send(`Successfully reset data. Affected rows: ${purchases.length}`);
-      }
+  fs.writeFile(purchasesFilePath, JSON.stringify(purchases, null, 2), (err) => {
+    if (err) {
+      console.error("Error while writing data:", err);
+      res.status(500).send("An error occurred while writing data.");
+    } else {
+      res.send(`Successfully reset data. Affected rows: ${purchases.length}`);
     }
-  );
+  });
 });
 
 app.get("/svr/shops", (req, res) => {
@@ -88,7 +75,11 @@ app.get("/svr/products", (req, res) => {
   });
 });
 app.get("/svr/purchases", (req, res) => {
-  const { shop, product, sort } = req.query;
+  let { shop, sort } = req.query;
+  let product = req.query.product || null;
+  console.log(product);
+  const removePr= (product) => product.replace("pr", "");
+  const removeSt= (shop) => shop.replace("st", "");
   fs.readFile(purchasesFilePath, "utf8", (err, data) => {
     if (err) {
       console.error("Error while reading data:", err);
@@ -98,13 +89,17 @@ app.get("/svr/purchases", (req, res) => {
     const purchases = JSON.parse(data);
     let filteredPurchases = purchases;
     if (shop) {
-      filteredPurchases = filteredPurchases.filter((p) => p.shopid === shop);
-    }
-    if (product) {
+        shop = removeSt(shop);
+        console.log(shop);
+      let st = shops.find((sh) => sh.shopid === +shop);
       filteredPurchases = filteredPurchases.filter(
-        (p) => p.productid === product
+        (p) => p.shopid === st.shopid
       );
     }
+    if (product) {
+        const productIds = product.split(",").map(removePr);
+        filteredPurchases = filteredPurchases.filter((p) => productIds.includes(p.productid.toString()));
+      }
     if (sort) {
       const validSortFields = ["QtyAsc", "QtyDesc", "ValueAsc", "ValueDesc"];
       const orderBy = validSortFields.find((sortKey) => sortKey === sort);
@@ -122,58 +117,98 @@ app.get("/svr/purchases", (req, res) => {
         );
       }
     }
-
     res.send(filteredPurchases);
   });
 });
-
-app.get("/svr/purchases/shops/:id", (req, res) => {
+app.get("/svr/purchases/shops/:id", function (req, res) {
   const id = +req.params.id;
-  const sql =
-    "SELECT p.productid, p.shopid, p.quantity, p.price, s.name,s.rent FROM purchases p INNER JOIN shops s ON p.shopid = s.shopid WHERE p.shopid = $1 ORDER BY s.shopid";
-  fs.readFile(purchasesFilePath, "utf8", (err, data) => {
+  console.log(id);
+  fs.readFile("purchases.json", "utf8", (err, purchaseData) => {
     if (err) {
-      console.error("Error while reading data:", err);
-      res.status(500).send("An error occurred while reading data.");
-    } else {
-      const purchases = JSON.parse(data);
-      const filteredPurchases = purchases.filter((p) => p.shopid === id);
-      res.send(filteredPurchases);
+      console.error("Error reading purchases data:", err);
+      res.status(500).send("An error occurred while fetching purchases.");
+      return;
     }
+    fs.readFile("shops.json", "utf8", (err, shopData) => {
+      if (err) {
+        console.error("Error reading shops data:", err);
+        res.status(500).send("An error occurred while fetching shops.");
+        return;
+      }
+      const purchases = JSON.parse(purchaseData);
+      const shops = JSON.parse(shopData);
+      const filteredPurchases = purchases.filter(
+        (purchase) => purchase.shopid === id
+      );
+      const result = filteredPurchases.map((purchase) => {
+        const shop = shops.find((shop) => shop.shopId === purchase.shopid);
+        return {
+          productid: purchase.productid,
+          shopid: purchase.shopid,
+          quantity: purchase.quantity,
+          price: purchase.price,
+          name: shop.name,
+          rent: shop.rent,
+        };
+      });
+      console.log(result);
+      res.send(result);
+    });
   });
 });
 
 app.get("/svr/purchases/products/:id", (req, res) => {
-  const id = +req.params.id;
-  const sql =
-    "SELECT p.productid, p.shopid, p.quantity, p.price, s.productname,s.category,s.description FROM purchases p INNER JOIN products s ON p.productid = s.productid WHERE p.productid = $1 ORDER BY s.productid";
-  fs.readFile(purchasesFilePath, "utf8", (err, data) => {
+  const productId = +req.params.id;
+  fs.readFile(purchasesFilePath, "utf8", (err, purchasesData) => {
     if (err) {
       console.error("Error while reading data:", err);
       res.status(500).send("An error occurred while reading data.");
-    } else {
-      const purchases = JSON.parse(data);
-      const filteredPurchases = purchases.filter((p) => p.productid === id);
-      res.send(filteredPurchases);
+      return;
     }
+    fs.readFile(productsFilePath, "utf8", (err, productsData) => {
+      if (err) {
+        console.error("Error while reading data:", err);
+        res.status(500).send("An error occurred while reading data.");
+        return;
+      }
+      console.log(purchasesData, productsData);
+      const purchases = JSON.parse(purchasesData);
+      const products = JSON.parse(productsData);
+      const filteredPurchases = purchases.filter(
+        (p) => p.productid === productId
+      );
+      const purchasesWithDetails = filteredPurchases.map((p) => {
+        const productDetails = products.find(
+          (product) => product.productid === p.productid
+        );
+        return {
+          ...p,
+          productname: productDetails ? productDetails.productname : "Unknown",
+          category: productDetails ? productDetails.category : "Unknown",
+          description: productDetails ? productDetails.description : "Unknown",
+          shopid: p.shopid,
+        };
+      });
+      console.log(purchasesWithDetails);
+      res.send(purchasesWithDetails);
+    });
   });
 });
 
 app.post("/svr/shops", (req, res, next) => {
   console.log("Request Body:", req.body);
   let { name, rent } = req.body;
-  const newShop = { shopId: Date.now(), name, rent };
+  const newShop = { name, rent };
   fs.readFile(shopsFilePath, "utf8", (err, data) => {
     if (err) {
       console.error("Error while reading data:", err);
       res.status(500).send("An error occurred while reading data.");
     } else {
       const existingShops = JSON.parse(data);
-      existingShops.push(newShop);
+      existingShops.push({ ...newShop, shopId: existingShops.length + 1 });
       fs.writeFile(
         shopsFilePath,
         JSON.stringify(existingShops, null, 2),
-        { flag: "w" },
         (err) => {
           if (err) {
             console.error("Error while inserting data:", err);
@@ -189,6 +224,7 @@ app.post("/svr/shops", (req, res, next) => {
 
 app.put("/svr/products/:id", (req, res) => {
   const id = +req.params.id;
+  console.log(id);
   let { productname, category, description } = req.body;
   if (id) {
     fs.readFile(productsFilePath, "utf8", (err, data) => {
@@ -205,7 +241,6 @@ app.put("/svr/products/:id", (req, res) => {
           fs.writeFile(
             productsFilePath,
             JSON.stringify(products, null, 2),
-            { flag: "w" },
             (err) => {
               if (err) {
                 console.error("Error while updating data:", err);
@@ -224,42 +259,157 @@ app.put("/svr/products/:id", (req, res) => {
     res.status(400).send("Invalid product id provided.");
   }
 });
-app.get("/totalPurchase/shop/:id", (req, res) => {
-  const shopId = req.params.id;
-  console.log(shopId);
-  fs.readFile(purchasesFilePath, "utf8", (err, data) => {
+app.get("/svr/totalPurchase/shop/:id", function (req, res) {
+  const shopId = +req.params.id;
+  fs.readFile("purchases.json", "utf8", (err, purchaseData) => {
     if (err) {
-      console.error("Error while reading data:", err);
-      res.status(500).send("An error occurred while reading data.");
+      console.error("Error reading purchases data:", err);
+      res.status(500).send("An error occurred while fetching total purchases.");
       return;
     }
-    const purchases = JSON.parse(data);
-    const totalPurchaseByShop = purchases.reduce((acc, purchase) => {
-      if (+purchase.shopid === +shopId) {
-        const productId = purchase.productid;
-        acc[productId] = (acc[productId] || 0) + purchase.quantity;
+
+    fs.readFile("shops.json", "utf8", (err, shopData) => {
+      if (err) {
+        console.error("Error reading shops data:", err);
+        res
+          .status(500)
+          .send("An error occurred while fetching total purchases.");
+        return;
       }
-      return acc;
-    }, {});
-    res.send(totalPurchaseByShop);
+      const purchases = JSON.parse(purchaseData);
+      const shops = JSON.parse(shopData);
+      const shop = shops.find((s) => s.shopId === shopId);
+      if (!shop) {
+        res.status(404).send("Shop not found.");
+        return;
+      }
+      const filteredPurchases = purchases.filter(
+        (purchase) => purchase.shopid === shopId
+      );
+      const totalPurchases = filteredPurchases.reduce((acc, purchase) => {
+        const existingProduct = acc.find(
+          (item) => item.productid === purchase.productid
+        );
+        if (existingProduct) {
+          existingProduct.totalQuantity += purchase.quantity;
+          existingProduct.totalPrice += purchase.quantity * purchase.price;
+        } else {
+          acc.push({
+            productid: purchase.productid,
+            shopid: purchase.shopid,
+            totalquantity: purchase.quantity,
+            totalprice: purchase.quantity * purchase.price,
+            name: shop.name,
+            rent: shop.rent,
+          });
+        }
+        return acc;
+      }, []);
+      console.log(totalPurchases);
+      res.send(totalPurchases);
+    });
   });
 });
-app.get("/totalPurchase/product/:id", (req, res) => {
+
+app.get("/svr/totalPurchase/product/:id", function (req, res) {
   const productId = req.params.id;
-  fs.readFile(purchasesFilePath, "utf8", (err, data) => {
+  console.log(productId);
+  fs.readFile("purchases.json", "utf8", (err, purchaseData) => {
     if (err) {
-      console.error("Error while reading data:", err);
-      res.status(500).send("An error occurred while reading data.");
+      console.error("Error reading purchases data:", err);
+      res.status(500).send("An error occurred while fetching total purchase.");
       return;
     }
-    const purchases = JSON.parse(data);
-    const totalPurchaseByProduct = purchases.reduce((acc, purchase) => {
-      if (+purchase.productid === +productId) {
-        const shopId = purchase.shopid;
-        acc[shopId] = (acc[shopId] || 0) + purchase.quantity;
+    fs.readFile("shops.json", "utf8", (err, shopData) => {
+      if (err) {
+        console.error("Error reading shops data:", err);
+        res
+          .status(500)
+          .send("An error occurred while fetching total purchase.");
+        return;
       }
-      return acc;
-    }, {});
-    res.send(totalPurchaseByProduct);
+      const purchases = JSON.parse(purchaseData);
+      const shops = JSON.parse(shopData);
+      const filteredPurchases = purchases.filter(
+        (purchase) => +purchase.productid === +productId
+      );
+      console.log(filteredPurchases, shops);
+      const totalPurchaseByShop = filteredPurchases.reduce((acc, purchase) => {
+        console.log(purchase);
+        const shop = shops.find((shop) => +shop.shopId === +purchase.shopid);
+        console.log(shop);
+        if (shop) {
+          const totalquantity = acc[purchase.shopid]
+            ? acc[purchase.shopid].totalquantity + purchase.quantity
+            : purchase.quantity;
+          const totalprice = acc[purchase.shopid]
+            ? acc[purchase.shopid].totalprice +
+              purchase.price * purchase.quantity
+            : purchase.price * purchase.quantity;
+          acc[purchase.shopid] = {
+            productid: purchase.productid,
+            shopid: purchase.shopid,
+            name: shop.name,
+            rent: shop.rent,
+            totalquantity,
+            totalprice,
+          };
+        }
+        return acc;
+      }, {});
+      const totalPurchaseArray = Object.values(totalPurchaseByShop);
+      console.log(totalPurchaseArray);
+      res.json(totalPurchaseArray);
+    });
+  });
+});
+app.get("/svr/products/:id", function (req, res) {
+  const id = +req.params.id;
+  console.log(id);
+  fs.readFile("products.json", "utf8", (err, data) => {
+    if (err) {
+      console.error("Error reading products data:", err);
+      res.status(500).send("An error occurred while fetching products.");
+      return;
+    }
+    const products = JSON.parse(data);
+    const product = products.find((prod) => prod.productid === id);
+    console.log(product);
+    if (product) {
+      res.send([product]);
+    } else {
+      res.status(404).send("Product not found.");
+    }
+  });
+});
+app.post("/svr/products", function (req, res) {
+  console.log("Request Body:", req.body);
+  let { productname, category, description } = req.body;
+  let newProduct = {
+    productname,
+    category,
+    description,
+  };
+  fs.readFile("products.json", "utf8", (err, data) => {
+    if (err) {
+      console.error("Error reading products data:", err);
+      res.status(500).send("An error occurred while inserting data.");
+      return;
+    }
+    const products = JSON.parse(data);
+    products.push({ ...newProduct, productid: products.length + 1 });
+    fs.writeFile(
+      "products.json",
+      JSON.stringify(products, null, 2),
+      "utf8",
+      (err) => {
+        if (err) {
+          console.error("Error writing products data:", err);
+          res.status(500).send("An error occurred while inserting data.");
+        } else {
+          res.send(`${products.length} insertion Successful`);
+        }
+      }
+    );
   });
 });
