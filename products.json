@@ -21,7 +21,7 @@
     "productid": 4,
     "productname": "Mazaa",
     "category": "Soft Drinks",
-    "description": "500ml bottle"
+    "description": "500ml "
   },
   {
     "productid": 5,
@@ -46,5 +46,11 @@
     "productname": "Perk",
     "category": "Chocolate",
     "description": "40 g"
+  },
+  {
+    "productname": "Pepsi",
+    "category": "Beverages",
+    "description": "jkfjadfdf",
+    "productid": 9
   }
 ]
